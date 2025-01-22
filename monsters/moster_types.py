@@ -16,7 +16,7 @@ class Goblin(BaseMonster):
 class Skelet(BaseMonster):
     def __init__(self, position, floor):
         stats = [
-            5 * (1.1 * floor),  # хп 
+            5 * (1.1 * floor),  # хп
             5,  # урон
             5,  # скорость(цифры везде условные)
         ]  # с каждым новым этажом можно увеличивать статы на какой-то процент
