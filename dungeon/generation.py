@@ -1,4 +1,7 @@
 from random import randint, choice
+from .room import Room
+import pygame
+
 def generation_dungeon_grid(rows, cols, room_count):
     grid = [[None for i in range(cols)] for k in range(rows)]
     start_x = randint(0, cols - 1)
@@ -32,8 +35,26 @@ def generation_dungeon_grid(rows, cols, room_count):
                 break
     end_x, end_y = room_list[-1]
     grid[end_y][end_x] = "E"
-    return grid
-grid = generation_dungeon_grid(10, 10, 10)
+    rooms = []
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            cell = grid[i][j]
+            if cell:
+                room = Room(grid, j, i, cell)
+                rooms.append(room)
+    return grid, rooms
 
-for row in grid:
-    print(' '.join(cell if cell is not None else ' ' for cell in row))
+def create_dungeon_sprites(rooms):
+    print(1)
+    floor_group = pygame.sprite.Group()
+    print(2)
+    for room in rooms:
+        floor_group.add(room.floor)
+    return floor_group
+
+
+
+#grid = generation_dungeon_grid(10, 10, 10)
+
+#for row in grid:
+ #   print(' '.join(cell if cell is not None else ' ' for cell in row))
