@@ -11,9 +11,14 @@ def main():
     clock = pygame.time.Clock()
     grid_rows = 10
     grid_cols = 10
-    room_count = 15
-    grid, rooms = generation_dungeon_grid(grid_rows, grid_cols, room_count)
-    floor_group = create_dungeon_sprites(rooms)
+    room_count = 40
+    while True:
+        try:
+            grid, rooms = generation_dungeon_grid(grid_rows, grid_cols, room_count)
+            floor_group, walls_group = create_dungeon_sprites(rooms)
+            break
+        except:
+            pass
     running = True
     while running:
         dt = clock.tick(FPS) / 1000
@@ -22,6 +27,7 @@ def main():
                 running = False
         screen.fill(BACKGROUND_COLOR)
         floor_group.draw(screen)
+        walls_group.draw(screen)
         pygame.display.flip()
     pygame.quit()
 

@@ -38,19 +38,20 @@ def generation_dungeon_grid(rows, cols, room_count):
     rooms = []
     for i in range(len(grid)):
         for j in range(len(grid[i])):
-            cell = grid[i][j]
+            cell = grid[j][i]
             if cell:
-                room = Room(grid, j, i, cell)
+                room = Room(grid, i, j, cell)
                 rooms.append(room)
     return grid, rooms
 
 def create_dungeon_sprites(rooms):
-    print(1)
     floor_group = pygame.sprite.Group()
-    print(2)
+    walls_group = pygame.sprite.Group()
     for room in rooms:
         floor_group.add(room.floor)
-    return floor_group
+        walls_group.add(room.walls)
+    return floor_group, walls_group
+
 
 
 
