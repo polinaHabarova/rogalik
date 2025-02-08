@@ -56,6 +56,7 @@ class Player(pygame.sprite.Sprite):
         self.bullets = pygame.sprite.Group()
         self.animation_speed = 0.2
         self.last_update = pygame.time.get_ticks()
+        self.jumps_available = 2  # Количество доступных прыжков
 
     def animate(self):
         now = pygame.time.get_ticks()
@@ -76,7 +77,7 @@ class Player(pygame.sprite.Sprite):
                 self.image = self.idle_frame
 
     def update(self, tiles):
-        self.animate()
+        self.animate()  # Обновляем анимацию
         self.rect.x += self.x_velocity
         for tile in tiles:
             if self.rect.colliderect(tile.rect):
@@ -92,7 +93,7 @@ class Player(pygame.sprite.Sprite):
                 if self.y_velocity > 0:
                     self.rect.bottom = tile.rect.top
                     self.on_ground = True
-                    self.can_jump = True
+                    self.jumps_available = 2
                 elif self.y_velocity < 0:
                     self.rect.top = tile.rect.bottom
                 self.y_velocity = 0
@@ -104,9 +105,10 @@ class Player(pygame.sprite.Sprite):
         self.flip_image()
 
     def jump(self):
-        if self.can_jump:
+        if self.jumps_available > 0:
             self.y_velocity = -8
-            self.can_jump = False
+            self.jumps_available -= 1
+            self.is_jumping = True
 
     def shoot(self, direction):
         if self.x_velocity < 0:
@@ -216,6 +218,12 @@ def draw_level(screen, tiles, player, exit_tile, spikes, enemies):
         screen.blit(exit_tile.image, exit_tile.rect)
     for enemy in enemies:
         screen.blit(enemy.image, enemy.rect)
+
+    # Добавляем кнопку паузы
+    pause_button = Button("Pause", font_size=24, color=WHITE, bg_color=RED)
+    pause_button.set_pos(screen.get_width() - 60, 30)  # Позиция кнопки (верхний правый угол)
+    screen.blit(pause_button.image, pause_button.rect)
+    return pause_button  # Возвращаем кнопку для обработки событий
 class Button(pygame.sprite.Sprite):
     def __init__(self, text, font_size=24, color=(0, 0, 0), bg_color=(220, 220, 220)):
         super().__init__()
@@ -238,6 +246,10 @@ class Button(pygame.sprite.Sprite):
                 return True
         return False
 def show_start_menu(screen):
+    # Загружаем фон для меню
+    menu_background = pygame.image.load('sprites/menu_background.png').convert()
+    menu_background = pygame.transform.scale(menu_background, (screen.get_width(), screen.get_height()))  # Масштабируем под размер экрана
+
     start_button = Button("Start Game", font_size=36)
     quit_button = Button("Quit", font_size=36)
     start_button.set_pos(screen.get_width() // 2, screen.get_height() // 2 - 50)
@@ -255,7 +267,42 @@ def show_start_menu(screen):
             if quit_button.handle_event(event):
                 pygame.quit()
                 sys.exit()
-        screen.fill(WHITE)
+
+
+        screen.blit(menu_background, (0, 0))
+
+
+        buttons.draw(screen)
+        pygame.display.flip()
+        clock.tick(60)
+
+def show_pause_menu(screen):
+    # Загружаем фон для меню паузы (можно использовать тот же, что и для стартового меню)
+    pause_background = pygame.image.load('sprites/menu_background.png').convert()
+    pause_background = pygame.transform.scale(pause_background, (screen.get_width(), screen.get_height()))
+
+    # Создаем кнопки для меню паузы
+    resume_button = Button("Resume", font_size=36)
+    quit_button = Button("Quit", font_size=36)
+    resume_button.set_pos(screen.get_width() // 2, screen.get_height() // 2 - 50)
+    quit_button.set_pos(screen.get_width() // 2, screen.get_height() // 2 + 50)
+    buttons = pygame.sprite.Group(resume_button, quit_button)
+
+    clock = pygame.time.Clock()
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if resume_button.handle_event(event):  # Если нажата кнопка "Resume"
+                return "resume"
+            if quit_button.handle_event(event):  # Если нажата кнопка "Quit"
+                return "quit"
+
+        # Отрисовываем фон меню паузы
+        screen.blit(pause_background, (0, 0))
+
+        # Отрисовываем кнопки
         buttons.draw(screen)
         pygame.display.flip()
         clock.tick(60)
@@ -263,10 +310,16 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((800, 600))
     clock = pygame.time.Clock()
+
+    # Загружаем фон
+    background = pygame.image.load('sprites/background.png').convert()
+    background = pygame.transform.scale(background, (screen.get_width(), screen.get_height()))
+
     current_level = 1
     menu_choice = show_start_menu(screen)
     if menu_choice == "start_game":
         running = True
+        paused = False  # Флаг для отслеживания состояния паузы
         while running:
             tiles, player, exit_tile, rows, cols, spikes, enemies_group = load_level(
                 f'level_{current_level}.txt'
@@ -284,35 +337,51 @@ def main():
                         if event.key == K_ESCAPE:
                             pygame.quit()
                             sys.exit()
-                        elif event.key == K_LEFT:
+                        elif event.key == K_LEFT and not paused:
                             player.x_velocity -= 2
-                        elif event.key == K_RIGHT:
+                        elif event.key == K_RIGHT and not paused:
                             player.x_velocity += 2
-                        elif event.key == K_SPACE:
+                        elif event.key == K_SPACE and not paused:
                             player.jump()
-                        elif event.key == K_f:
+                        elif event.key == K_f and not paused:
                             if player.x_velocity > 0:
                                 player.shoot('right')
                             else:
                                 player.shoot('left')
-                    elif event.type == KEYUP:
+                    elif event.type == KEYUP and not paused:
                         if event.key == K_LEFT or event.key == K_RIGHT:
                             player.x_velocity = 0
+                    elif event.type == MOUSEBUTTONDOWN:
+                        if pause_button.rect.collidepoint(event.pos):
+                            paused = True
 
-                player.update(tiles)
-                for enemy in enemies_group:
-                    enemy.update(player, tiles)
-                player.bullets.update(tiles, enemies_group)
-                for spike in spikes:
-                    if player.rect.colliderect(spike.rect):
-                        player.reset_position(start_x, start_y)
+                if paused:
+
+                    pause_choice = show_pause_menu(screen)
+                    if pause_choice == "resume":
+                        paused = False
+                    elif pause_choice == "quit":
+                        pygame.quit()
+                        sys.exit()
+                else:  # Если игра не на паузе
+                    player.update(tiles)
+                    for enemy in enemies_group:
+                        enemy.update(player, tiles)
+                    player.bullets.update(tiles, enemies_group)
+                    for spike in spikes:
+                        if player.rect.colliderect(spike.rect):
+                            player.reset_position(start_x, start_y)
+                            break
+                    if exit_tile is not None and player.rect.colliderect(exit_tile.rect):
+                        print("Вы прошли уровень!")
+                        current_level += 1
                         break
-                if exit_tile is not None and player.rect.colliderect(exit_tile.rect):
-                    print("Вы прошли уровень!")
-                    current_level += 1
-                    break
 
-                draw_level(screen, tiles, player, exit_tile, spikes, enemies_group)
+
+                screen.blit(background, (0, 0))
+
+
+                pause_button = draw_level(screen, tiles, player, exit_tile, spikes, enemies_group)
                 player.bullets.draw(screen)
                 pygame.display.flip()
                 clock.tick(60)
