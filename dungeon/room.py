@@ -1,13 +1,11 @@
 import pygame
+from settings import TITLE_SIZE, WALL_COLOR, FLOOR_COLOR, image
 
-TITLE_SIZE = 32
-FLOOR_COLOR = (200, 200, 200)
-WALL_COLOR = (50, 50, 50)
-image = pygame.image.load('resurses//sprites//danj//dungeon_floor.png')
 
 class Floor(pygame.sprite.Sprite):
     def __init__(self, x, y, cell_type):
         super().__init__()
+        self.cell_type = cell_type
         self.image = pygame.Surface((TITLE_SIZE, TITLE_SIZE), pygame.SRCALPHA)
         if cell_type == 'S':
             self.image.fill((55, 105, 25))
@@ -16,8 +14,8 @@ class Floor(pygame.sprite.Sprite):
         else:
             title_x, title_y = 1, 0
             title_rect = pygame.Rect(title_x * TITLE_SIZE, title_y * TITLE_SIZE, TITLE_SIZE, TITLE_SIZE)
-            self.image.blit(image, (0,0), title_rect)
-        self.rect = self.image.get_rect(topleft = (x,y))
+            self.image.blit(image, (0, 0), title_rect)
+        self.rect = self.image.get_rect(topleft=(x, y))
 
 
 class Wall(pygame.sprite.Sprite):
@@ -26,6 +24,7 @@ class Wall(pygame.sprite.Sprite):
         self.image = pygame.Surface((TITLE_SIZE, TITLE_SIZE))
         self.image.fill(WALL_COLOR)
         self.rect = self.image.get_rect(topleft=(x, y))
+
 
 class Room:
     def __init__(self, grid, x, y, cell_type):
@@ -37,10 +36,10 @@ class Room:
 
     def create_walls(self, grid):
         walls = pygame.sprite.Group()
-        neighbours = [(0, 1), (1, 0), (0, -1), (-1, 0,), (1, 1), (-1, -1), (1, -1), (-1, 1)]
+        neighbours = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
         for dx, dy in neighbours:
             nx, ny = self.x + dx, self.y + dy
-            if 0 <= ny < len(grid) and 0 <= nx <= len(grid[0]):
+            if 0 <= ny < len(grid) and 0 <= nx < len(grid[0]):
                 if grid[ny][nx] is None:
                     wall = Wall(nx * TITLE_SIZE, ny * TITLE_SIZE)
                     walls.add(wall)
@@ -48,10 +47,3 @@ class Room:
                 wall = Wall(nx * TITLE_SIZE, ny * TITLE_SIZE)
                 walls.add(wall)
         return walls
-
-
-
-
-
-
-
